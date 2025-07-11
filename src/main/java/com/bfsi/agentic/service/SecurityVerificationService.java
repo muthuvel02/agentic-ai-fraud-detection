@@ -7,7 +7,6 @@ import java.util.Scanner;
 public class SecurityVerificationService {
 
     public boolean verifyUser(String userId) {
-        // Simulate asking 3 security questions (real use: OTP, app push, secure web page)
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Verifying user: " + userId);

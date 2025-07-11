@@ -8,6 +8,15 @@ public class TransactionEvent {
     private String deviceId;
     private String ip;
 
+    private String outcome;
+
+    public String getOutcome() {
+        return outcome;
+    }
+
+    public void setOutcome(String outcome) {
+        this.outcome = outcome;
+    }
     public String getTransactionId() { return transactionId; }
     public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
 

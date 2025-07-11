@@ -21,53 +21,67 @@ public class FraudDetectionService {
     private AccountService accountService;
 
     @Autowired
-    private EmailService emailService;
-
-    @Autowired
     private TransactionRepository transactionRepository;
 
     public String processTransaction(TransactionEvent event) {
-        ReasoningEngineService.RiskResults risks = reasoningEngineService.evaluateTransaction(event);
+        String finalOutcome = "APPROVE";
 
-        boolean amountSuspicious = "HIGH".equals(risks.amountRisk) || "MEDIUM".equals(risks.amountRisk);
-        boolean locationSuspicious = "HIGH".equals(risks.locationRisk) || "MEDIUM".equals(risks.locationRisk);
-        boolean deviceSuspicious = "HIGH".equals(risks.deviceRisk) || "MEDIUM".equals(risks.deviceRisk);
+        String amountRisk = reasoningEngineService.evaluateAmountRisk(event);
+        System.out.println("Amount Risk: " + amountRisk);
 
-        boolean anyHighRisk = "HIGH".equals(risks.amountRisk) || "HIGH".equals(risks.locationRisk) || "HIGH".equals(risks.deviceRisk);
+        if ("HIGH".equalsIgnoreCase(amountRisk)) {
+            return handleSecurityOrBlock(event, "Amount HIGH");
+        } else if ("MEDIUM".equalsIgnoreCase(amountRisk)) {
 
-        String finalOutcome;
+            String locationRisk = reasoningEngineService.evaluateLocationRisk(event);
+            System.out.println("Location Risk: " + locationRisk);
 
-        // Always ask security questions if any HIGH or all suspicious
-        if (anyHighRisk || (amountSuspicious && locationSuspicious && deviceSuspicious)) {
-            boolean passed = securityVerificationService.verifyUser(event.getUserId());
-            if (!passed) {
-                accountService.freezeAccount(event.getUserId());
-                finalOutcome = "BLOCKED";
-                saveTransaction(event, finalOutcome);
-                return "TRANSACTION CANCELLED & ACCOUNT FROZEN";
-            } else {
-                finalOutcome = "APPROVE";
-                saveTransaction(event, finalOutcome);
-                return "TRANSACTION SUCCESSFUL (Security check passed)";
+            if ("HIGH".equalsIgnoreCase(locationRisk)) {
+                return handleSecurityOrBlock(event, "Location HIGH");
+            } else if ("MEDIUM".equalsIgnoreCase(locationRisk)) {
+
+                String deviceRisk = reasoningEngineService.evaluateDeviceRisk(event);
+                System.out.println("Device Risk: " + deviceRisk);
+
+                if ("HIGH".equalsIgnoreCase(deviceRisk) || "MEDIUM".equalsIgnoreCase(deviceRisk)) {
+                    return handleSecurityOrBlock(event, "Device suspicious");
+                }
             }
         }
 
-        // Else approve
-        finalOutcome = "APPROVE";
-        saveTransaction(event, finalOutcome);
+        saveTransaction(event, "APPROVE");
         return "TRANSACTION SUCCESSFUL";
     }
 
-    private void saveTransaction(TransactionEvent event, String riskOutcome) {
+    private String handleSecurityOrBlock(TransactionEvent event, String reason) {
+        boolean passed = securityVerificationService.verifyUser(event.getUserId());
+
+        if (!passed) {
+            accountService.freezeAccount(event.getUserId());
+            saveTransaction(event, "BLOCKED");
+
+            System.out.println("ALERT: Bank Security Team Notification");
+            System.out.println("UserID: " + event.getUserId());
+            System.out.println("TransactionID: " + event.getTransactionId());
+            System.out.println("Reason: " + reason);
+            System.out.println("Action: Account frozen and transaction cancelled.");
+
+            return "TRANSACTION CANCELLED & ACCOUNT FROZEN (" + reason + ") - Bank Security Team Notified";
+        } else {
+            saveTransaction(event, "APPROVE");
+            return "TRANSACTION SUCCESSFUL (Security check passed: " + reason + ")";
+        }
+    }
+
+    private void saveTransaction(TransactionEvent event, String outcome) {
         TransactionRecord record = new TransactionRecord();
         record.setUserId(event.getUserId());
         record.setAmount(event.getAmount());
         record.setLocation(event.getLocation());
         record.setDeviceId(event.getDeviceId());
-        record.setRiskOutcome(riskOutcome);
+        record.setRiskOutcome(outcome);
         record.setTimestamp(LocalDateTime.now());
-        transactionRepository.save(record);
 
-        System.out.println("Stored transaction with outcome: " + riskOutcome);
+        transactionRepository.save(record);
     }
 }
