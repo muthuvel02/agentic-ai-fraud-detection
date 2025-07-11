@@ -1,9 +1,11 @@
 package com.bfsi.agentic.service;
 
 import com.bfsi.agentic.model.TransactionEvent;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+@Slf4j
 @Service
 public class ReasoningEngineService {
 
@@ -11,19 +13,19 @@ public class ReasoningEngineService {
 
     public String evaluateAmountRisk(TransactionEvent event) {
         String response = restTemplate.postForObject("http://localhost:5000/predict-amount", event, String.class);
-        System.out.println("Amount ML Risk: " + response);
+        log.debug("Amount ML Risk: " + response);
         return parseRisk(response);
     }
 
     public String evaluateLocationRisk(TransactionEvent event) {
         String response = restTemplate.postForObject("http://localhost:5000/predict-location", event, String.class);
-        System.out.println("Location ML Risk: " + response);
+        log.debug("Location ML Risk: " + response);
         return parseRisk(response);
     }
 
     public String evaluateDeviceRisk(TransactionEvent event) {
         String response = restTemplate.postForObject("http://localhost:5000/predict-device", event, String.class);
-        System.out.println("Device ML Risk: " + response);
+        log.debug("Device ML Risk: " + response);
         return parseRisk(response);
     }
 
