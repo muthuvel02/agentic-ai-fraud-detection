@@ -24,53 +24,41 @@ public class FraudDetectionService {
     private TransactionRepository transactionRepository;
 
     public String processTransaction(TransactionEvent event) {
-        String finalOutcome = "APPROVE";
+        String risk = reasoningEngineService.evaluateRiskWithLLM(event);
 
-        String amountRisk = reasoningEngineService.evaluateAmountRisk(event);
-        System.out.println("Amount Risk: " + amountRisk);
-
-        if ("HIGH".equalsIgnoreCase(amountRisk)) {
-            return handleSecurityOrBlock(event, "Amount HIGH");
-        } else if ("MEDIUM".equalsIgnoreCase(amountRisk)) {
-
-            String locationRisk = reasoningEngineService.evaluateLocationRisk(event);
-            System.out.println("Location Risk: " + locationRisk);
-
-            if ("HIGH".equalsIgnoreCase(locationRisk)) {
-                return handleSecurityOrBlock(event, "Location HIGH");
-            } else if ("MEDIUM".equalsIgnoreCase(locationRisk)) {
-
-                String deviceRisk = reasoningEngineService.evaluateDeviceRisk(event);
-                System.out.println("Device Risk: " + deviceRisk);
-
-                if ("HIGH".equalsIgnoreCase(deviceRisk) || "MEDIUM".equalsIgnoreCase(deviceRisk)) {
-                    return handleSecurityOrBlock(event, "Device suspicious");
-                }
-            }
+        if ("HIGH".equalsIgnoreCase(risk)) {
+            return handleSecurityOrBlock(event, "LLM flagged as HIGH");
         }
 
         saveTransaction(event, "APPROVE");
-        return "TRANSACTION SUCCESSFUL";
+        return "✅ TRANSACTION SUCCESSFUL";
     }
 
     private String handleSecurityOrBlock(TransactionEvent event, String reason) {
-        boolean passed = securityVerificationService.verifyUser(event.getUserId());
+        // Save and get the real transaction ID
+        TransactionRecord record = saveTransactionAndReturn(event, "PENDING_VERIFICATION");
 
-        if (!passed) {
-            accountService.freezeAccount(event.getUserId());
-            saveTransaction(event, "BLOCKED");
+        // Pass the real ID to generate unique verification link
+        securityVerificationService.verifyUser(
+                event.getUserId(),
+                "DEVICE",  // Example factor
+                "demo@example.com",  // Mock email
+                record.getId()  // Unique ID for this transaction
+        );
 
-            System.out.println("ALERT: Bank Security Team Notification");
-            System.out.println("UserID: " + event.getUserId());
-            System.out.println("TransactionID: " + event.getTransactionId());
-            System.out.println("Reason: " + reason);
-            System.out.println("Action: Account frozen and transaction cancelled.");
+        return "⏳ Transaction is PENDING user approval via verification link.";
+    }
 
-            return "TRANSACTION CANCELLED & ACCOUNT FROZEN (" + reason + ") - Bank Security Team Notified";
-        } else {
-            saveTransaction(event, "APPROVE");
-            return "TRANSACTION SUCCESSFUL (Security check passed: " + reason + ")";
-        }
+    private TransactionRecord saveTransactionAndReturn(TransactionEvent event, String outcome) {
+        TransactionRecord record = new TransactionRecord();
+        record.setUserId(event.getUserId());
+        record.setAmount(event.getAmount());
+        record.setLocation(event.getLocation());
+        record.setDeviceId(event.getDeviceId());
+        record.setRiskOutcome(outcome);
+        record.setTimestamp(LocalDateTime.now());
+        transactionRepository.save(record);
+        return record;
     }
 
     private void saveTransaction(TransactionEvent event, String outcome) {
@@ -81,7 +69,6 @@ public class FraudDetectionService {
         record.setDeviceId(event.getDeviceId());
         record.setRiskOutcome(outcome);
         record.setTimestamp(LocalDateTime.now());
-
         transactionRepository.save(record);
     }
 }
