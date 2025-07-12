@@ -4,6 +4,7 @@ import com.bfsi.agentic.model.TransactionRecord;
 import com.bfsi.agentic.repository.TransactionRepository;
 import com.bfsi.agentic.DTO.VerificationRequest;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +13,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
+@Slf4j
 @CrossOrigin(origins = "http://localhost:3000")
 public class VerificationController {
 
@@ -24,7 +26,7 @@ public class VerificationController {
         Optional<TransactionRecord> txnOpt = repository.findByVerificationToken(token);
 
         if (txnOpt.isEmpty()) {
-            System.out.println("Not found in DB!");
+           log.warn("Not found in DB!");
             return ResponseEntity.notFound().build();
         }
 

@@ -13,9 +13,9 @@ public class SecurityVerificationService {
     @Autowired
     private EmailService emailService;
 
-    public boolean verifyUser(String userId, String factor, String email, String verificationToken) {
+    public String verifyUser(String userId, String factor, String email, String verificationToken) {
         String verifyLink = String.format(verifyTxnUrlPrefix, verificationToken);
-        emailService.sendAlertEmail(email, "Verify Transaction", "Demo Link: " + fakeLink);
+        emailService.sendAlertEmail(email, "Verify Transaction", "Demo Link: " + verifyLink);
         return verifyLink; // pending until verified
     }
 

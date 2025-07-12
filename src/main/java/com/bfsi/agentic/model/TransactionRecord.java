@@ -1,8 +1,11 @@
 package com.bfsi.agentic.model;
 
 import jakarta.persistence.*;
+import lombok.Data;
+
 import java.time.LocalDateTime;
 
+@Data
 @Entity
 @Table(name = "transaction_record")
 public class TransactionRecord {
@@ -17,31 +20,7 @@ public class TransactionRecord {
     private String deviceId;
     private String riskOutcome;
     private LocalDateTime timestamp;
-
     private String verificationToken;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
-
-    public double getAmount() { return amount; }
-    public void setAmount(double amount) { this.amount = amount; }
-
-    public String getLocation() { return location; }
-    public void setLocation(String location) { this.location = location; }
-
-    public String getDeviceId() { return deviceId; }
-    public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
-
-    public String getRiskOutcome() { return riskOutcome; }
-    public void setRiskOutcome(String riskOutcome) { this.riskOutcome = riskOutcome; }
-
-    public LocalDateTime getTimestamp() { return timestamp; }
-    public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
-
-    public String getVerificationToken() { return verificationToken; }
-    public void setVerificationToken(String verificationToken) { this.verificationToken = verificationToken; }
 
 }
