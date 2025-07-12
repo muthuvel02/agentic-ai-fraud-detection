@@ -2,6 +2,7 @@ package com.bfsi.agentic.service;
 
 import com.bfsi.agentic.model.TransactionEvent;
 import com.bfsi.agentic.model.TransactionRecord;
+import com.bfsi.agentic.model.ValidateTransactionResponseDTO;
 import com.bfsi.agentic.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ public class FraudDetectionService {
     @Autowired
     private TransactionRepository transactionRepository;
 
-    public String processTransaction(TransactionEvent event) {
+    public ValidateTransactionResponseDTO processTransaction(TransactionEvent event) {
         String risk = reasoningEngineService.evaluateRiskWithLLM(event);
 
         if ("HIGH".equalsIgnoreCase(risk)) {
@@ -31,22 +32,27 @@ public class FraudDetectionService {
         }
 
         saveTransaction(event, "APPROVE");
-        return "✅ TRANSACTION SUCCESSFUL";
+        return ValidateTransactionResponseDTO.builder()
+                .message("TRANSACTION SUCCESSFUL")
+                .build();
     }
 
-    private String handleSecurityOrBlock(TransactionEvent event, String reason) {
+    private ValidateTransactionResponseDTO handleSecurityOrBlock(TransactionEvent event, String reason) {
         // Save and get the real transaction ID
         TransactionRecord record = saveTransactionAndReturn(event, "PENDING_VERIFICATION");
 
         // Pass the real ID to generate unique verification link
-        securityVerificationService.verifyUser(
+        String link = securityVerificationService.verifyUser(
                 event.getUserId(),
                 "DEVICE",  // Example factor
                 "demo@example.com",  // Mock email
                 record.getId()  // Unique ID for this transaction
         );
 
-        return "⏳ Transaction is PENDING user approval via verification link.";
+        return ValidateTransactionResponseDTO.builder()
+                .message("Transaction is PENDING user approval via verification link.")
+                .link(link)
+                .build();
     }
 
     private TransactionRecord saveTransactionAndReturn(TransactionEvent event, String outcome) {

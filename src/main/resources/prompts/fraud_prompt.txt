@@ -12,6 +12,8 @@ Compare the current transaction with the history.
 - Flag any unusual amount, device, or location.
 - Small differences in device ID must be flagged.
 - Large location changes must be flagged.
+- Consider HIGH Risk when no past history.
+- Consider transaction with outcome PENDING_VERIFICATION as unsafe.
 
 Give an overall RISK LEVEL: HIGH, MEDIUM or LOW.
 Respond with one word: HIGH, MEDIUM or LOW.

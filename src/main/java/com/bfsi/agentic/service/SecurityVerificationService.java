@@ -1,19 +1,23 @@
 package com.bfsi.agentic.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SecurityVerificationService {
 
+    @Value("${verify.txn.url.prefix}")
+    private String verifyTxnUrlPrefix;
+
     @Autowired
     private EmailService emailService;
 
-    public boolean verifyUser(String userId, String factor, String email, Long transactionId) {
-        String fakeLink = "http://localhost:8081/verify?token=" + transactionId;
-        emailService.sendAlertEmail(email, "Verify Transaction", "Demo Link: " + fakeLink);
+    public String verifyUser(String userId, String factor, String email, Long transactionId) {
+        String verifyLink = String.format(verifyTxnUrlPrefix, transactionId);
+        emailService.sendAlertEmail(email, "Verify Transaction", "Demo Link: " + verifyLink);
 
-        return false; // pending until verified
+        return verifyLink; // pending until verified
     }
 
 }
