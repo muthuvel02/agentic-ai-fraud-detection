@@ -1,12 +1,13 @@
 package com.bfsi.agentic.service;
 
-import com.bfsi.agentic.model.TransactionEvent;
 import com.bfsi.agentic.model.TransactionRecord;
 import com.bfsi.agentic.repository.TransactionRepository;
+import com.bfsi.agentic.model.TransactionEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 public class FraudDetectionService {
@@ -30,23 +31,22 @@ public class FraudDetectionService {
             return handleSecurityOrBlock(event, "LLM flagged as HIGH");
         }
 
-        saveTransaction(event, "APPROVE");
-        return "✅ TRANSACTION SUCCESSFUL";
+        saveTransaction(event, "APPROVED");
+        return "TRANSACTION SUCCESSFUL";
     }
 
     private String handleSecurityOrBlock(TransactionEvent event, String reason) {
-        // Save and get the real transaction ID
+        // Save transaction with token & question
         TransactionRecord record = saveTransactionAndReturn(event, "PENDING_VERIFICATION");
 
-        // Pass the real ID to generate unique verification link
         securityVerificationService.verifyUser(
                 event.getUserId(),
-                "DEVICE",  // Example factor
-                "demo@example.com",  // Mock email
-                record.getId()  // Unique ID for this transaction
+                "DEVICE",
+                "demo@example.com",
+                record.getVerificationToken()
         );
 
-        return "⏳ Transaction is PENDING user approval via verification link.";
+        return "Transaction is PENDING user approval via verification link.";
     }
 
     private TransactionRecord saveTransactionAndReturn(TransactionEvent event, String outcome) {
@@ -57,6 +57,10 @@ public class FraudDetectionService {
         record.setDeviceId(event.getDeviceId());
         record.setRiskOutcome(outcome);
         record.setTimestamp(LocalDateTime.now());
+
+        String token = UUID.randomUUID().toString();
+        record.setVerificationToken(token);
+
         transactionRepository.save(record);
         return record;
     }
@@ -69,6 +73,7 @@ public class FraudDetectionService {
         record.setDeviceId(event.getDeviceId());
         record.setRiskOutcome(outcome);
         record.setTimestamp(LocalDateTime.now());
+
         transactionRepository.save(record);
     }
 }

@@ -9,11 +9,11 @@ public class SecurityVerificationService {
     @Autowired
     private EmailService emailService;
 
-    public boolean verifyUser(String userId, String factor, String email, Long transactionId) {
-        String fakeLink = "http://localhost:8081/verify?token=" + transactionId;
+    public boolean verifyUser(String userId, String factor, String email, String verificationToken) {
+        String fakeLink = "http://localhost:3000/verify?token=" + verificationToken;
         emailService.sendAlertEmail(email, "Verify Transaction", "Demo Link: " + fakeLink);
 
-        return false; // pending until verified
+        return true; // pending until verified
     }
 
 }

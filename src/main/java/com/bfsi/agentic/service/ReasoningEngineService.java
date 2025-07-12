@@ -34,6 +34,10 @@ public class ReasoningEngineService {
         List<TransactionRecord> history = transactionRepository
                 .findTop5ByUserIdOrderByTimestampDesc(event.getUserId());
 
+        if (history == null || history.isEmpty()) {
+            System.out.println("No transaction history found — bypassing LLM and forcing security verification.");
+            return "HIGH"; // Treat as high risk → your flow will trigger security hold
+        }
         StringBuilder historyText = new StringBuilder();
         for (TransactionRecord rec : history) {
             historyText.append(String.format(
