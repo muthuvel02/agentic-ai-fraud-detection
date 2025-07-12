@@ -1,13 +1,14 @@
 package com.bfsi.agentic.service;
 
-import com.bfsi.agentic.model.TransactionEvent;
 import com.bfsi.agentic.model.TransactionRecord;
 import com.bfsi.agentic.model.ValidateTransactionResponseDTO;
 import com.bfsi.agentic.repository.TransactionRepository;
+import com.bfsi.agentic.model.TransactionEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 public class FraudDetectionService {
@@ -31,7 +32,7 @@ public class FraudDetectionService {
             return handleSecurityOrBlock(event, "LLM flagged as HIGH");
         }
 
-        saveTransaction(event, "APPROVE");
+        saveTransaction(event, "APPROVED");
         return ValidateTransactionResponseDTO.builder()
                 .message("TRANSACTION SUCCESSFUL")
                 .build();
@@ -44,9 +45,9 @@ public class FraudDetectionService {
         // Pass the real ID to generate unique verification link
         String link = securityVerificationService.verifyUser(
                 event.getUserId(),
-                "DEVICE",  // Example factor
-                "demo@example.com",  // Mock email
-                record.getId()  // Unique ID for this transaction
+                "DEVICE",
+                "demo@example.com",
+                record.getVerificationToken()
         );
 
         return ValidateTransactionResponseDTO.builder()
@@ -63,6 +64,10 @@ public class FraudDetectionService {
         record.setDeviceId(event.getDeviceId());
         record.setRiskOutcome(outcome);
         record.setTimestamp(LocalDateTime.now());
+
+        String token = UUID.randomUUID().toString();
+        record.setVerificationToken(token);
+
         transactionRepository.save(record);
         return record;
     }
@@ -75,6 +80,7 @@ public class FraudDetectionService {
         record.setDeviceId(event.getDeviceId());
         record.setRiskOutcome(outcome);
         record.setTimestamp(LocalDateTime.now());
+
         transactionRepository.save(record);
     }
 }

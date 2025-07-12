@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "transaction_record")
 public class TransactionRecord {
 
     @Id
@@ -16,6 +17,8 @@ public class TransactionRecord {
     private String deviceId;
     private String riskOutcome;
     private LocalDateTime timestamp;
+
+    private String verificationToken;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -37,4 +40,8 @@ public class TransactionRecord {
 
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+
+    public String getVerificationToken() { return verificationToken; }
+    public void setVerificationToken(String verificationToken) { this.verificationToken = verificationToken; }
+
 }
