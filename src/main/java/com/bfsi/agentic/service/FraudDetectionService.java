@@ -1,6 +1,7 @@
 package com.bfsi.agentic.service;
 
 import com.bfsi.agentic.model.TransactionRecord;
+import com.bfsi.agentic.model.ValidateTransactionResponseDTO;
 import com.bfsi.agentic.repository.TransactionRepository;
 import com.bfsi.agentic.model.TransactionEvent;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,7 @@ public class FraudDetectionService {
     @Autowired
     private TransactionRepository transactionRepository;
 
-    public String processTransaction(TransactionEvent event) {
+    public ValidateTransactionResponseDTO processTransaction(TransactionEvent event) {
         String risk = reasoningEngineService.evaluateRiskWithLLM(event);
 
         if ("HIGH".equalsIgnoreCase(risk)) {
@@ -32,21 +33,27 @@ public class FraudDetectionService {
         }
 
         saveTransaction(event, "APPROVED");
-        return "TRANSACTION SUCCESSFUL";
+        return ValidateTransactionResponseDTO.builder()
+                .message("TRANSACTION SUCCESSFUL")
+                .build();
     }
 
-    private String handleSecurityOrBlock(TransactionEvent event, String reason) {
-        // Save transaction with token & question
+    private ValidateTransactionResponseDTO handleSecurityOrBlock(TransactionEvent event, String reason) {
+        // Save and get the real transaction ID
         TransactionRecord record = saveTransactionAndReturn(event, "PENDING_VERIFICATION");
 
-        securityVerificationService.verifyUser(
+        // Pass the real ID to generate unique verification link
+        String link = securityVerificationService.verifyUser(
                 event.getUserId(),
                 "DEVICE",
                 "demo@example.com",
                 record.getVerificationToken()
         );
 
-        return "Transaction is PENDING user approval via verification link.";
+        return ValidateTransactionResponseDTO.builder()
+                .message("Transaction is PENDING user approval via verification link.")
+                .link(link)
+                .build();
     }
 
     private TransactionRecord saveTransactionAndReturn(TransactionEvent event, String outcome) {

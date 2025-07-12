@@ -4,6 +4,7 @@ import com.bfsi.agentic.model.TransactionEvent;
 import com.bfsi.agentic.model.TransactionRecord;
 import com.bfsi.agentic.repository.TransactionRepository;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -16,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 public class ReasoningEngineService {
 
@@ -35,9 +37,10 @@ public class ReasoningEngineService {
                 .findTop5ByUserIdOrderByTimestampDesc(event.getUserId());
 
         if (history == null || history.isEmpty()) {
-            System.out.println("No transaction history found — bypassing LLM and forcing security verification.");
-            return "HIGH"; // Treat as high risk → your flow will trigger security hold
+            log.info("No transaction history found — bypassing LLM and forcing security verification.");
+            return "HIGH";
         }
+
         StringBuilder historyText = new StringBuilder();
         for (TransactionRecord rec : history) {
             historyText.append(String.format(
@@ -77,15 +80,15 @@ public class ReasoningEngineService {
             );
 
             String answer = response.getBody();
-            System.out.println("Groq LLM Answer: " + answer);
+            log.debug("Groq LLM Answer: {}", answer);
 
             if (answer != null && answer.toUpperCase().contains("HIGH")) return "HIGH";
             if (answer != null && answer.toUpperCase().contains("MEDIUM")) return "MEDIUM";
-            return "LOW";
+            return "HIGH";
 
         } catch (Exception e) {
-            System.out.println(" LLM call failed, fallback to LOW risk");
-            return "LOW";
+            log.error(" LLM call failed, fallback to LOW risk");
+            return "HIGH";
         }
     }
 }
